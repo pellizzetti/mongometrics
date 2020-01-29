@@ -1,5 +1,6 @@
 #!/usr/bin/env perl
 use strict;
+use warnings;
 use Mojolicious::Lite;
 use Mojo::JSON qw( decode_json );
 
@@ -8,7 +9,7 @@ get '/' => sub {
   my $json     = $c->req->json;
   my $email    = $json->{email};
   my $password = $json->{password};
-  my $cmd      = `mongo --quiet --eval 'JSON.stringify(db.serverStatus())' -u clustermonitor -p "$envPassword"`;
+  my $cmd      = `mongo --quiet --eval 'JSON.stringify(db.serverStatus())' -u clustermonitor -p "$ENV{'SKY_PA'}"`;
 
   unless($email eq $ENV{'SKY_EM'} && $password eq $ENV{'SKY_PA'}) {
     return $c->render(
