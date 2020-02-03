@@ -11,6 +11,7 @@ MONGODB_DATABASE=test
 MAX_BACKUPS=7
 BACKUP_PREFIX=mongo-test
 GCSFUSE_DIR=$PWD/backup
+BACKUP_DIR=$GCSFUSE_DIR/mongo
 
 gcsfuse -o nonempty ${STORAGE_BACKUP_BUCKET_NAME} ${GCSFUSE_DIR}
 
@@ -21,8 +22,8 @@ PASS_STR=" --password ${MONGODB_PASS}"
 DB_STR=" --db ${MONGODB_DATABASE}"
 EXTRA_STR=" --authenticationDatabase admin"
 
-BACKUP_NAME="${BACKUP_PREFIX}-$(date +\%Y.\%m.\%d.\%H\%M\%S)"
-BACKUP_CMD="mongodump --gzip --archive=${GCSFUSE_DIR}/${BACKUP_NAME}.gz ${HOST_STR}${PORT_STR}${USER_STR}${DB_STR}${EXTRA_STR}"
+BACKUP_NAME="${MONGODB_DATABASE}-\$(date +\%Y.\%m.\%d.\%H\%M\%S)"
+BACKUP_CMD="mongodump --gzip --archive=${BACKUP_DIR}/${BACKUP_NAME}.gz ${HOST_STR}${PORT_STR}${USER_STR}${PASS_STR}${DB_STR}${EXTRA_STR}"
 
 echo "=> Creating backup script"
 rm -f $PWD/backup.sh
@@ -35,15 +36,15 @@ if ${BACKUP_CMD} ;then
     echo "   Backup succeeded"
 else
     echo "   Backup failed"
-    rm -rf ${GCSFUSE_DIR}/${BACKUP_NAME}.gz
+    rm -rf ${BACKUP_DIR}/${BACKUP_NAME}.gz
 fi
 
 if [ -n "\${MAX_BACKUPS}" ]; then
-    while [ \$(ls ${GCSFUSE_DIR} -N1 | wc -l) -gt \${MAX_BACKUPS} ];
+    while [ \$(ls ${BACKUP_DIR} -N1 | wc -l) -gt \${MAX_BACKUPS} ];
     do
-        BACKUP_TO_BE_DELETED=\$(ls ${GCSFUSE_DIR} -N1 | sort | head -n 1)
+        BACKUP_TO_BE_DELETED=\$(ls ${BACKUP_DIR} -N1 | sort | head -n 1)
         echo "   Deleting backup \${BACKUP_TO_BE_DELETED}"
-        rm -rf ${GCSFUSE_DIR}/\${BACKUP_TO_BE_DELETED}
+        rm -rf ${BACKUP_DIR}/\${BACKUP_TO_BE_DELETED}
     done
 fi
 echo "=> Backup done"
@@ -55,7 +56,7 @@ rm -f $PWD/restore.sh
 cat <<EOF >> $PWD/restore.sh
 #!/bin/bash
 echo "=> Restore database from \$1"
-if mongorestore --gzip --archive=\$1 ${HOST_STR}${PORT_STR}${USER_STR}${EXTRA_STR}; then
+if mongorestore --gzip --archive=\$1 ${HOST_STR}${PORT_STR}${USER_STR}${PASS_STR}${EXTRA_STR}; then
     echo "   Restore succeeded"
 else
     echo "   Restore failed"
