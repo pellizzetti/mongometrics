@@ -1,0 +1,14 @@
+[Unit]
+Description=Mongo Metrics
+After=network.target
+
+[Service]
+Type=simple
+User=guipellizzetti
+ExecStart=${MMETRIC_DIR}/app.pl daemon -m production -l http://*:${MMETRIC_PORT}
+EnvironmentFile=${MMETRIC_DIR}/.env
+Restart=always
+RestartSec=3
+
+[Install]
+WantedBy=multi-user.target
